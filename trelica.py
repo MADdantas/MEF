@@ -99,6 +99,16 @@ def f_U(Fe,Kaa,n):
     U = np.concatenate((np.matmul(np.linalg.inv(Kaa), Fe),np.zeros((2*n-len(Fe))))).reshape((2*n,1))
     return U
 
+# Forças nodais em cada barra no sistema local, f [N]
+def f_f(e,n,kb,T,Lb,U):
+    f = np.zeros((e,1))
+    for i in range(e):
+        f = np.concatenate((f, np.matmul(kb[:,i*n:(i*n)+n],np.matmul(T[:,i*n:(i*n)+n],np.matmul(Lb[i*n:(i*n)+n,:],U)))))
+    f = f[e:]
+    f = f.reshape((e,n))
+    return f
+
+
 #######################
 # Calculo de trelicas #
 #######################
@@ -123,4 +133,6 @@ theta: np.array, n: int, b: np.array, Fe: np.array, EI, P):
     K = f_K(Lb,k,e,n)
     Kaa = f_Kaa(K,Fe)
     U = f_U(Fe,Kaa,n)
-    print(U)
+    F = np.matmul(K,U) # Forças nodais, F [kN]
+    f = f_f(e,n,kb,T,Lb,U)
+    return U, F, f

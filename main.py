@@ -33,4 +33,5 @@ Fe = np.array([48, -48, 0, 0, 0])
 ##########
 # Função #
 ##########
-t.trelica(EA,L,theta,n,b,Fe,None,None)
+[U,F,f] = t.trelica(EA,L,theta,n,b,Fe,None,None)
+print("Deslocamentos nodais global: \n",U,"\n","Forças nodais: \n",F,"\n","Forças nodais em cada barra: \n",f)
