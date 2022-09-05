@@ -1,4 +1,4 @@
-import trelica as t
+from trelica import trelica
 import numpy as np
 
 ##########
@@ -33,5 +33,5 @@ Fe = np.array([48, -48, 0, 0, 0])
 ##########
 # Função #
 ##########
-[U,F,f] = t.trelica(EA,L,theta,n,b,Fe)
+[U,F,f] = trelica(EA,L,theta,n,b,Fe)
 print("Deslocamentos nodais global: \n",U,"\n","Forças nodais: \n",F,"\n","Forças nodais em cada barra: \n",f)
