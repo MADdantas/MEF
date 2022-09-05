@@ -114,17 +114,8 @@ def f_f(e,kb,T,Lb,U):
 #######################
 
 def trelica(EA: np.array, L: np.array, 
-theta: np.array, n: int, b: np.array, Fe: np.array, EI, P):
+theta: np.array, n: int, b: np.array, Fe: np.array):
     
-    # Validacao dos inputs
-    args = [EA,EI,L,theta,n,b,Fe,P]
-    x=0
-    for a in args:
-        if a is None:
-            x += 1
-    if x>2:
-        print("at least 6 input arguments required")
-        return
     e = L.shape[0] # Número de barras
     kb = f_kb(EA,L)
     T = f_t(theta)
