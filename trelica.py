@@ -35,19 +35,19 @@ import math
 ###################################
 
 # Matriz de rigidez das barras no sistema local, kb
-def f_kb(EA,L,n):
-    kb = np.zeros((n,1))
+def f_kb(EA,L):
+    kb = np.zeros((4,1))
     for i in range(len(EA)):
         kb = np.hstack((kb, ((EA[i]/L[i] * np.array([[1, 0, -1, 0], 
-                                                            [0, 0, 0, 0], 
-                                                            [-1, 0, 1, 0], 
-                                                            [0, 0, 0, 0]])))))
+                                                    [0, 0, 0, 0], 
+                                                    [-1, 0, 1, 0], 
+                                                    [0, 0, 0, 0]])))))
     kb = kb[:,1:]
     return kb
 
 # Matriz de transformação das barras, T
-def f_t(theta,n,e):
-    T = np.zeros((n,1))
+def f_t(theta):
+    T = np.zeros((4,1))
     for i in range(len(theta)):
         T = np.hstack((T, (np.array([[math.cos(theta[i]*(math.pi/180)), math.sin(theta[i]*(math.pi/180)), 0, 0], 
                                           [-math.sin(theta[i]*(math.pi/180)), math.cos(theta[i]*(math.pi/180)), 0, 0], 
@@ -57,13 +57,13 @@ def f_t(theta,n,e):
     return T
 
 # Matriz de rigidez da barra no sistema global, k
-def f_k(kb: np.array, T: np.array, e: int, n: int):
-    k = np.zeros((n,1))
+def f_k(kb: np.array, T: np.array, e: int):
+    k = np.zeros((4,1))
 
     for i in range(e):
-        _t = T[:,i*n:(i+1)*n].T
-        kb_ = kb[:,i*n:(i+1)*n]
-        t_ = T[:,i*n:(i+1)*n]
+        _t = T[:,i*4:(i+1)*4].T
+        kb_ = kb[:,i*4:(i+1)*4]
+        t_ = T[:,i*4:(i+1)*4]
         k = np.hstack((k, np.matmul(_t,np.matmul(kb_,t_))))
     k = k[:,1:]
     return k
@@ -78,14 +78,14 @@ def f_Lb(e,n,b):
                 l[i] = 1
                 Lb = np.concatenate((Lb, l))
     Lb = Lb[n*2:]
-    Lb = Lb.reshape((e*n,n*2))
+    Lb = Lb.reshape((6*n,n*2))
     return Lb
 
 # Matriz de rigidez da estrutura, K
-def f_K(Lb: np.array, k: np.array, e: int, n: int):
+def f_K(Lb: np.array, k: np.array, e: int):
     K = np.zeros((Lb.shape[1], Lb.shape[1]))
     for i in range(e):
-        K = K + np.matmul(Lb[i*n:(i*n)+n,:].T, np.matmul(k[:,i*n:(i*n)+n], Lb[i*n:(i*n)+n,:]))
+        K = K + np.matmul(Lb[i*4:(i*4)+4,:].T, np.matmul(k[:,i*4:(i*4)+4], Lb[i*4:(i*4)+4,:]))
     return K
 
 # Matriz de rigidez reduzida da estrutura, Kaa
@@ -100,12 +100,12 @@ def f_U(Fe,Kaa,n):
     return U
 
 # Forças nodais em cada barra no sistema local, f [N]
-def f_f(e,n,kb,T,Lb,U):
+def f_f(e,kb,T,Lb,U):
     f = np.zeros((e,1))
     for i in range(e):
-        f = np.concatenate((f, np.matmul(kb[:,i*n:(i*n)+n],np.matmul(T[:,i*n:(i*n)+n],np.matmul(Lb[i*n:(i*n)+n,:],U)))))
+        f = np.concatenate((f, np.matmul(kb[:,i*4:(i*4)+4],np.matmul(T[:,i*4:(i*4)+4],np.matmul(Lb[i*4:(i*4)+4,:],U)))))
     f = f[e:]
-    f = f.reshape((e,n))
+    f = f.reshape((e,4))
     return f
 
 
@@ -126,13 +126,13 @@ theta: np.array, n: int, b: np.array, Fe: np.array, EI, P):
         print("at least 6 input arguments required")
         return
     e = L.shape[0] # Número de barras
-    kb = f_kb(EA,L,n)
-    T = f_t(theta,n,e)
-    k = f_k(kb,T,e,n)
+    kb = f_kb(EA,L)
+    T = f_t(theta)
+    k = f_k(kb,T,e)
     Lb = f_Lb(e,n,b)
-    K = f_K(Lb,k,e,n)
+    K = f_K(Lb,k,e)
     Kaa = f_Kaa(K,Fe)
     U = f_U(Fe,Kaa,n)
     F = np.matmul(K,U) # Forças nodais, F [kN]
-    f = f_f(e,n,kb,T,Lb,U)
+    f = f_f(e,kb,T,Lb,U)
     return U, F, f
