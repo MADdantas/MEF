@@ -34,13 +34,15 @@ import math
 ###################################
 
 # Matriz de rigidez das barras no sistema local, kb
-def f_kb(EA,L):
+def f_kb(EA,EI,L):
     kb = np.zeros((6,1))
     for i in range(len(EA)):
-        kb = np.hstack((kb, ((EA[i]/L[i] * np.array([[1, 0, -1, 0], 
-                                                    [0, 0, 0, 0], 
-                                                    [-1, 0, 1, 0], 
-                                                    [0, 0, 0, 0]])))))
+        kb = np.hstack((kb, np.array([[EA[i]/L[i], 0, 0, -EA[i]/L[i], 0, 0], 
+                                        [0, (12*EI[i])/(L[i]**3), (6*EI[i])/(L[i]**2), 0, (-12*EI[i])/(L[i]**3), (6*EI[i])/(L[i]**2)], 
+                                        [0, (6*EI[i])/(L[i]**2), (4*EI[i])/(L[i]), 0, (-6*EI[i])/(L[i]**2), (2*EI[i])/(L[i])], 
+                                        [-EA[i]/L[i], 0, 0, EA[i]/L[i], 0, 0],
+                                        [0, (-12*EI[i])/(L[i]**3), (-6*EI[i])/(L[i]**2), 0, (12*EI[i])/(L[i]**3), (-6*EI[i])/(L[i]**2)],
+                                        [0, (6*EI[i])/(L[i]**2), (2*EI[i])/(L[i]), 0, (-6*EI[i])/(L[i]**2), (4*EI[i])/(L[i])]])))
     kb = kb[:,1:]
     return kb
 
@@ -48,10 +50,12 @@ def f_kb(EA,L):
 def f_t(theta):
     T = np.zeros((6,1))
     for i in range(len(theta)):
-        T = np.hstack((T, (np.array([[math.cos(theta[i]*(math.pi/180)), math.sin(theta[i]*(math.pi/180)), 0, 0], 
-                                          [-math.sin(theta[i]*(math.pi/180)), math.cos(theta[i]*(math.pi/180)), 0, 0], 
-                                          [0, 0, math.cos(theta[i]*(math.pi/180)), math.sin(theta[i]*(math.pi/180))], 
-                                          [0, 0, -math.sin(theta[i]*(math.pi/180)), math.cos(theta[i]*(math.pi/180))]]))))
+        T = np.hstack((T, (np.array([[math.cos(theta[i]*(math.pi/180)), math.sin(theta[i]*(math.pi/180)), 0, 0, 0, 0], 
+                                    [-math.sin(theta[i]*(math.pi/180)), math.cos(theta[i]*(math.pi/180)), 0, 0, 0, 0], 
+                                    [0, 0, 1, 0, 0, 0],
+                                    [0, 0, 0, math.cos(theta[i]*(math.pi/180)), math.sin(theta[i]*(math.pi/180))], 
+                                    [0, 0, 0, -math.sin(theta[i]*(math.pi/180)), math.cos(theta[i]*(math.pi/180))],
+                                    [0, 0, 0, 0, 0, 1]]))))
     T = T[:,1:]
     return T
 
@@ -93,9 +97,16 @@ def f_Kaa(K: np.array,Fe: np.array):
     Kaa = K[0:l,0:l]
     return Kaa
 
+# Carregamento nodal equivalente
+def f_f0(P,L,Fe):
+    f0b = np.zeros(6,1)
+    for i in range(len(P)):
+        pass
+
+
 # Deslocamentos nodais global, U [m]
-def f_U(Fe,Kaa,n):
-    U = np.concatenate((np.matmul(np.linalg.inv(Kaa), Fe),np.zeros((3*n-len(Fe))))).reshape((3*n,1))
+def f_U(Fe,Kaa,n,f0d):
+    U = np.concatenate((np.matmul(np.linalg.inv(Kaa), (Fe-f0d)),np.zeros((3*n-len(Fe))))).reshape((3*n,1))
     return U
 
 # Forças nodais em cada barra no sistema local, f [N]
@@ -114,4 +125,16 @@ def f_f(e,kb,T,Lb,U):
 
 def portico(EA: np.array, L: np.array, theta: np.array, 
 n: int, b: np.array, Fe: np.array, EI: np.array, P: np.array):
-    pass
+
+    e = L.shape[0] # Número de barras
+    kb = f_kb(EA,EI,L)
+    T = f_t(theta)
+    k = f_k(kb,T,e)
+    Lb = f_Lb(e,n,b)
+    K = f_K(Lb,k,e)
+    Kaa = f_Kaa(K,Fe)
+    f0d = f_f0(P,L,Fe)
+    U = f_U(Fe,Kaa,n,f0d)
+    F = np.matmul(K,U) # Forças nodais, F [kN]
+    f = f_f(e,kb,T,Lb,U)
+    return U, F, f
