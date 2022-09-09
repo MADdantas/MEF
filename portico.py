@@ -2,7 +2,6 @@
 
 # ============== Inputs ===============
 
-# E: módulo de elasticidade (kPa)
 # EA: rigidez (kN)
 # EI: rigider inercial (kNm2)
 # L: comprimento das barras (m)

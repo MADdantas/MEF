@@ -2,15 +2,12 @@
 
 # ============== Inputs ===============
 
-# E: módulo de elasticidade (kPa)
 # EA: rigidez (kN)
 # EI: rigider inercial (kNm2)
 # L: comprimento das barras (m)
 # theta: angulação das barras (graus)
 # n: número de elos
 # b: numeração dos deslocamentos
-# Fe: Carragamentos externos nas barras (kN ou kNm)
-# P: Carregaemtnos externos nos elos (kN ou kNm)
 
 # ======== Variáveis do programa =========
 
@@ -91,13 +88,11 @@ def f_K(Lb: np.array, k: np.array, e: int):
 # Matriz de rigidez reduzida da estrutura, Kaa
 def f_Kaa(K: np.array,Fe: np.array):
     l = len(Fe)
-    Kaa = K[0:l,0:l]
-    return Kaa
+    return K[0:l,0:l]
 
 # Deslocamentos nodais global, U [m]
 def f_U(Fe,Kaa,n):
-    U = np.concatenate((np.matmul(np.linalg.inv(Kaa), Fe),np.zeros((2*n-len(Fe))))).reshape((2*n,1))
-    return U
+    return np.concatenate((np.matmul(np.linalg.inv(Kaa), Fe),np.zeros((2*n-len(Fe))))).reshape((2*n,1))
 
 # Forças nodais em cada barra no sistema local, f [N]
 def f_f(e,kb,T,Lb,U):
