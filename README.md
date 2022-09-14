@@ -12,6 +12,8 @@ pip install numpy
 
 ## How To Use
 
+Clone this repository. You can use the git clone command or just download the .ZIP file and unzip it after.
+
 To solve a new problem, just create a python script in the same directory and import the function you wanna use.
 
 For trusses:
