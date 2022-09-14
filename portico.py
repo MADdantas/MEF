@@ -53,8 +53,8 @@ def f_t(theta):
         T = np.hstack((T, (np.array([[math.cos(theta[i]*(math.pi/180)), math.sin(theta[i]*(math.pi/180)), 0, 0, 0, 0], 
                                     [-math.sin(theta[i]*(math.pi/180)), math.cos(theta[i]*(math.pi/180)), 0, 0, 0, 0], 
                                     [0, 0, 1, 0, 0, 0],
-                                    [0, 0, 0, math.cos(theta[i]*(math.pi/180)), math.sin(theta[i]*(math.pi/180))], 
-                                    [0, 0, 0, -math.sin(theta[i]*(math.pi/180)), math.cos(theta[i]*(math.pi/180))],
+                                    [0, 0, 0, math.cos(theta[i]*(math.pi/180)), math.sin(theta[i]*(math.pi/180)),0], 
+                                    [0, 0, 0, -math.sin(theta[i]*(math.pi/180)), math.cos(theta[i]*(math.pi/180)),0],
                                     [0, 0, 0, 0, 0, 1]]))))
     T = T[:,1:]
     return T
@@ -65,7 +65,7 @@ def f_k(kb: np.array, T: np.array, e: int):
 
     for i in range(e):
         _t = T[:,i*6:(i+1)*6].T
-        kb_ = kb[:,i*4:(i+1)*6]
+        kb_ = kb[:,i*6:(i+1)*6]
         t_ = T[:,i*6:(i+1)*6]
         k = np.hstack((k, np.matmul(_t,np.matmul(kb_,t_))))
     k = k[:,1:]
@@ -80,8 +80,8 @@ def f_Lb(e,n,b):
                 l = np.zeros((n*3))
                 l[i] = 1
                 Lb = np.concatenate((Lb, l))
-    Lb = Lb[n*2:]
-    Lb = Lb.reshape((6*n,n*3))
+    Lb = Lb[n*3:]
+    Lb = Lb.reshape((6*e,n*3))
     return Lb
 
 # Matriz de rigidez da estrutura, K
@@ -93,21 +93,34 @@ def f_K(Lb: np.array, k: np.array, e: int):
 
 # Matriz de rigidez reduzida da estrutura, Kaa
 def f_Kaa(K: np.array,Fe: np.array):
-    l = len(Fe)
-    Kaa = K[0:l,0:l]
-    return Kaa
+    return K[0:len(Fe),0:len(Fe)]
 
 # Carregamento nodal equivalente
-def f_f0(P,L,Fe):
-    f0b = np.zeros(6,1)
+def f_f0d(P,L,Fe,T,Lb):
+    f0n = np.zeros((len(Fe),1))
     for i in range(len(P)):
-        pass
+        f0b = np.array([[0],
+                        [(np.sum(P[i])/2)],
+                        [(np.sum(P[i])*np.sum(L[i]))/8],
+                        [0],
+                        [(np.sum(P[i])/2)],
+                        [-(np.sum(P[i])*np.sum(L[i]))/8]])
+        if P[i] == 0:
+            f0n = np.hstack((f0n, np.zeros((len(Fe),1))))
+        else:
+            f0 = np.matmul(T[:,i*6:(i*6)+6].T, f0b)
+            f0c = np.matmul(Lb[i*6:(i*6)+6,:].T, f0)
+            f0n[:,i] = f0c[0:len(Fe),0]
+    f0d = np.zeros((len(Fe),1))
+    for i in range(len(Fe)):
+        f0d[i] = np.sum(f0n[i,:])
+    return f0d
+
 
 
 # Deslocamentos nodais global, U [m]
 def f_U(Fe,Kaa,n,f0d):
-    U = np.concatenate((np.matmul(np.linalg.inv(Kaa), (Fe-f0d)),np.zeros((3*n-len(Fe))))).reshape((3*n,1))
-    return U
+    return np.concatenate((np.matmul(np.linalg.inv(Kaa), (Fe-f0d[:,0])), np.zeros((3*n-len(Fe))))).reshape((3*n,1))
 
 # Forças nodais em cada barra no sistema local, f [N]
 def f_f(e,kb,T,Lb,U):
@@ -115,7 +128,7 @@ def f_f(e,kb,T,Lb,U):
     for i in range(e):
         f = np.concatenate((f, np.matmul(kb[:,i*6:(i*6)+6],np.matmul(T[:,i*6:(i*6)+6],np.matmul(Lb[i*6:(i*6)+6,:],U)))))
     f = f[e:]
-    f = f.reshape((e,4))
+    f = f.reshape((e,6))
     return f
 
 
@@ -133,7 +146,7 @@ n: int, b: np.array, Fe: np.array, EI: np.array, P: np.array):
     Lb = f_Lb(e,n,b)
     K = f_K(Lb,k,e)
     Kaa = f_Kaa(K,Fe)
-    f0d = f_f0(P,L,Fe)
+    f0d = f_f0d(P,L,Fe,T,Lb)
     U = f_U(Fe,Kaa,n,f0d)
     F = np.matmul(K,U) # Forças nodais, F [kN]
     f = f_f(e,kb,T,Lb,U)
