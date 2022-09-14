@@ -3,6 +3,10 @@ This repository contains methodes to calculate the displacement and reaction for
 ## Requirements
 * Install python 3 on your computer. You can download it [here](https://www.python.org/downloads/).
 
+When installing it, don't forget to check the Add Python to PATH checkbox.
+
+![image](https://user-images.githubusercontent.com/24358380/190241580-73ac94fc-9d1e-46d1-8169-1f33da2cf6a2.png)
+
 * Install the numpy library, we will use it to generate matrices and do basic operations with them.
 
   - To install it you just need to open a CMD window and paste the following comand (do this after completing the python installation)
